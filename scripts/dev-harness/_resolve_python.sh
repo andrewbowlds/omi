@@ -47,7 +47,8 @@ dev_harness_python_uses_windows_paths() {
   local python_bin="$1"
   local resolved
   resolved="$(command -v "$python_bin" 2>/dev/null || printf '%s' "$python_bin")"
-  case "${resolved,,}" in
+  # Bash 3.2 (macOS /bin/bash) lacks ${var,,}; keep this portable.
+  case "$(printf '%s' "$resolved" | tr '[:upper:]' '[:lower:]')" in
     *.exe)
       return 0
       ;;
