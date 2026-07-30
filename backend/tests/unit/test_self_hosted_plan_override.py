@@ -1,4 +1,4 @@
-"""SELF_HOSTED_PLAN pins entitlement reads without rewriting stored billing state."""
+"""OMI_SELF_HOSTED_PLAN pins entitlement reads without rewriting stored billing state."""
 
 import pytest
 
@@ -49,7 +49,7 @@ def stub_db(monkeypatch):
 
 
 def _set_plan(monkeypatch, value):
-    monkeypatch.setattr(subscription_utils, 'SELF_HOSTED_PLAN', value)
+    monkeypatch.setattr(subscription_utils, 'OMI_SELF_HOSTED_PLAN', value)
 
 
 def test_unset_leaves_the_stored_plan_alone(stub_db, monkeypatch):

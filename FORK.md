@@ -13,13 +13,13 @@ and bump the submodule pointer in the parent `edpapp` repo.
 
 ---
 
-## 1. `SELF_HOSTED_PLAN` — entitlement override
+## 1. `OMI_SELF_HOSTED_PLAN` — entitlement override
 
 **Why:** upstream gates transcription, chat, and desktop access on a Stripe-backed
 subscription. A self-hosted instance has no Stripe account, so every user resolves
 to Free and the paid-tier limits are unreachable.
 
-**What:** setting the `SELF_HOSTED_PLAN` env var to a plan id pins every user to
+**What:** setting the `OMI_SELF_HOSTED_PLAN` env var to a plan id pins every user to
 that plan.
 
 | Value | Effect |
@@ -31,7 +31,7 @@ that plan.
 
 **Files touched:**
 
-- `backend/utils/subscription.py` — `SELF_HOSTED_PLAN`, `SELF_HOSTED_PERIOD_END`,
+- `backend/utils/subscription.py` — `OMI_SELF_HOSTED_PLAN`, `OMI_SELF_HOSTED_PERIOD_END`,
   `get_self_hosted_plan_override()`, `apply_self_hosted_plan_override()`, added
   directly after `get_default_basic_subscription()`
 - `backend/database/users.py` — `get_user_subscription()` passes both of its return

@@ -1451,7 +1451,7 @@ def get_user_subscription(uid: str) -> Subscription:
     """Gets the user's subscription, creating a default free one if it doesn't exist.
 
     This is the entitlement read: on a self-hosted instance the returned plan is
-    pinned by SELF_HOSTED_PLAN (see utils.subscription). The stored Firestore
+    pinned by OMI_SELF_HOSTED_PLAN (see utils.subscription). The stored Firestore
     record is never rewritten to match — use get_existing_user_subscription() when
     you need what the user actually bought.
     """
