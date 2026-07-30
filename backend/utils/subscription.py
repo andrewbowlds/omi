@@ -893,6 +893,57 @@ def get_default_basic_subscription() -> Subscription:
     return Subscription(limits=get_basic_plan_limits())
 
 
+# A self-hosted deployment has no Stripe account, so nobody can ever hold a paid
+# subscription and every entitlement check falls back to Free. Setting
+# SELF_HOSTED_PLAN to a PlanType value pins every user to that plan for
+# *entitlement* reads only. Billing-state reads (get_existing_user_subscription,
+# consumed by the Stripe webhook and sync fair-use) keep reading stored truth, so
+# turning this on never rewrites what Firestore says a user actually bought.
+SELF_HOSTED_PLAN = os.getenv('SELF_HOSTED_PLAN', '').strip().lower()
+
+# get_user_valid_subscription() demotes a paid plan whose current_period_end has
+# passed (or is unset) back to Free, so the pinned plan needs a period end that
+# will not arrive. 2100-01-01T00:00:00Z.
+SELF_HOSTED_PERIOD_END = 4102444800
+
+
+def get_self_hosted_plan_override() -> Optional[PlanType]:
+    """The plan every user is pinned to on this instance, or None when unset."""
+    if not SELF_HOSTED_PLAN:
+        return None
+    try:
+        return PlanType(SELF_HOSTED_PLAN)
+    except ValueError:
+        logger.warning(
+            'event=self_hosted_plan_override outcome=ignored_invalid_plan value=%s',
+            SELF_HOSTED_PLAN[:32],
+        )
+        return None
+
+
+def apply_self_hosted_plan_override(subscription: Subscription) -> Subscription:
+    """Pins `subscription` to SELF_HOSTED_PLAN, or returns it unchanged when unset.
+
+    Stripe identity fields (`stripe_subscription_id`, `current_price_id`) are
+    preserved so account deletion still cancels a real subscription if one exists.
+    """
+    plan = get_self_hosted_plan_override()
+    if plan is None:
+        return subscription
+    return subscription.model_copy(
+        update={
+            'plan': plan,
+            'status': SubscriptionStatus.active,
+            'current_period_end': SELF_HOSTED_PERIOD_END,
+            'cancel_at_period_end': False,
+            'features': get_plan_features(plan),
+            'limits': get_plan_limits(plan),
+            'deprecated': False,
+            'deprecation_message': None,
+        }
+    )
+
+
 def get_plan_limits(plan: PlanType) -> PlanLimits:
     """Returns the PlanLimits object for the given plan.
 

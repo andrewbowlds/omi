@@ -24,7 +24,7 @@ from models.users import (
     SubscriptionStatus,
 )
 from models.other import Person
-from utils.subscription import get_default_basic_subscription
+from utils.subscription import apply_self_hosted_plan_override, get_default_basic_subscription
 import logging
 
 logger = logging.getLogger(__name__)
@@ -1448,7 +1448,13 @@ def set_user_onboarding_state(uid: str, onboarding_data: dict) -> None:
 
 
 def get_user_subscription(uid: str) -> Subscription:
-    """Gets the user's subscription, creating a default free one if it doesn't exist."""
+    """Gets the user's subscription, creating a default free one if it doesn't exist.
+
+    This is the entitlement read: on a self-hosted instance the returned plan is
+    pinned by SELF_HOSTED_PLAN (see utils.subscription). The stored Firestore
+    record is never rewritten to match — use get_existing_user_subscription() when
+    you need what the user actually bought.
+    """
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get(['subscription'])
     if user_doc.exists:
@@ -1470,7 +1476,7 @@ def get_user_subscription(uid: str) -> Subscription:
             if legacy_free_plan:
                 sub_data['plan'] = PlanType.basic.value
                 update_user_subscription(uid, sub_data)
-            return subscription
+            return apply_self_hosted_plan_override(subscription)
 
     # If subscription doesn't exist for the user, create and return a default free plan.
     default_subscription = get_default_basic_subscription()
@@ -1479,7 +1485,7 @@ def get_user_subscription(uid: str) -> Subscription:
     sub_to_store.pop('features', None)
     sub_to_store.pop('limits', None)
     user_ref.set({'subscription': sub_to_store}, merge=True)
-    return default_subscription
+    return apply_self_hosted_plan_override(default_subscription)
 
 
 def get_existing_user_subscription(uid: str) -> Optional[Subscription]:
